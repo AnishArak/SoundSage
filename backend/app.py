@@ -4,7 +4,13 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from recommender import search_songs, autocomplete, recommend, trending_songs, new_releases, get_song_by_id
 from spotify_client import SpotifyClient
+from flask import Flask
 
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Backend Running"
 base_dir = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(base_dir, ".env"))
 
