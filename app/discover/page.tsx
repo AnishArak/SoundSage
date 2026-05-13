@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import {
+import React, {
   Suspense,
   useState,
   useEffect,
@@ -30,13 +30,21 @@ import { cn } from "@/lib/utils";
 
 import type { Song } from "@/lib/song-dataset";
 
-const fetcher = (url: string) =>
-  fetch(url).then((res) => res.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch");
+  }
+
+  return res.json();
+};
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
 
-  const initialQuery = searchParams.get("q") || "";
+  const initialQuery =
+    searchParams.get("q") || "";
 
   const [searchQuery, setSearchQuery] =
     useState(initialQuery);
@@ -48,32 +56,38 @@ function DiscoverContent() {
     useState<"grid" | "list">("grid");
 
   const [languageFilter, setLanguageFilter] =
-    useState<"all" | "english" | "hindi">("all");
-
-  const { data: searchData, isLoading: isSearching } =
-    useSWR<{ tracks: Song[] }>(
-      searchQuery
-        ? `/api/search?q=${encodeURIComponent(
-            searchQuery
-          )}&limit=50`
-        : null,
-      fetcher,
-      { revalidateOnFocus: false }
+    useState<"all" | "english" | "hindi">(
+      "all"
     );
 
-  const { data: trendingData } =
-    useSWR<{ tracks: Song[] }>(
-      !searchQuery
-        ? `/api/trending?limit=50${
-            languageFilter !== "all"
-              ? `&language=${languageFilter}`
-              : ""
-          }`
-        : null,
-      fetcher,
-      { revalidateOnFocus: false }
-    );
+  // SEARCH API
+  const {
+    data: searchData,
+    isLoading: isSearching,
+  } = useSWR(
+    searchQuery
+      ? `/api/search?q=${encodeURIComponent(
+          searchQuery
+        )}&limit=50`
+      : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
+  // TRENDING API
+  const { data: trendingData } = useSWR(
+    !searchQuery
+      ? `/api/trending?limit=50`
+      : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
+
+  // AUTO SELECT FIRST TRACK
   const autoSeedTrack =
     selectedTracks.length === 0
       ? searchData?.tracks?.[0]
@@ -86,17 +100,20 @@ function DiscoverContent() {
       ? [autoSeedTrack.id]
       : [];
 
+  // RECOMMENDATION API
   const {
     data: recommendationsData,
     isLoading: isLoadingRecs,
-  } = useSWR<{ tracks: Song[] }>(
+  } = useSWR(
     recommendationSeedIds.length > 0
       ? `/api/recommendations?tracks=${recommendationSeedIds.join(
           ","
         )}&limit=15`
       : null,
     fetcher,
-    { revalidateOnFocus: false }
+    {
+      revalidateOnFocus: false,
+    }
   );
 
   useEffect(() => {
@@ -110,14 +127,14 @@ function DiscoverContent() {
     []
   );
 
-  const toggleTrackSelection = useCallback(
-    (track: Song) => {
+  const toggleTrackSelection =
+    useCallback((track: Song) => {
       setSelectedTracks((prev) => {
-        const isSelected = prev.some(
+        const exists = prev.some(
           (t) => t.id === track.id
         );
 
-        if (isSelected) {
+        if (exists) {
           return prev.filter(
             (t) => t.id !== track.id
           );
@@ -129,50 +146,56 @@ function DiscoverContent() {
 
         return [...prev, track];
       });
-    },
-    []
-  );
+    }, []);
 
   const filteredSearchResults =
-    searchData?.tracks?.filter((track) => {
-      if (languageFilter === "all") return true;
-      return track.language === languageFilter;
-    });
+    searchData?.tracks?.filter(
+      (track: Song) => {
+        if (languageFilter === "all")
+          return true;
+
+        return (
+          track.language ===
+          languageFilter
+        );
+      }
+    );
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-black text-white py-8">
+      <div className="mx-auto max-w-7xl px-4">
 
-        {/* Header */}
+        {/* HEADER */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4 flex items-center gap-3">
-            <Search className="h-8 w-8 text-primary" />
+          <h1 className="text-4xl font-bold mb-4 flex items-center gap-3">
+            <Search className="h-8 w-8 text-green-500" />
             Discover Music
           </h1>
 
-          <p className="text-muted-foreground max-w-2xl">
-            Search for songs, artists, or albums.
+          <p className="text-zinc-400">
+            AI-powered Bollywood &
+            Hollywood music discovery.
           </p>
         </div>
 
-        {/* Search */}
+        {/* SEARCH */}
         <div className="mb-6">
           <SearchBar
             onSearch={handleSearch}
             isLoading={isSearching}
-            placeholder="Search songs..."
+            placeholder="Search songs, artists, albums..."
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2 mb-8">
+        {/* FILTERS */}
+        <div className="flex gap-2 mb-8">
+
           <Button
             variant={
               languageFilter === "all"
                 ? "default"
                 : "outline"
             }
-            size="sm"
             onClick={() =>
               setLanguageFilter("all")
             }
@@ -187,12 +210,10 @@ function DiscoverContent() {
                 ? "default"
                 : "outline"
             }
-            size="sm"
             onClick={() =>
               setLanguageFilter("english")
             }
           >
-            <Film className="h-4 w-4 mr-2" />
             Hollywood
           </Button>
 
@@ -202,22 +223,21 @@ function DiscoverContent() {
                 ? "default"
                 : "outline"
             }
-            size="sm"
             onClick={() =>
               setLanguageFilter("hindi")
             }
           >
-            <Film className="h-4 w-4 mr-2" />
             Bollywood
           </Button>
         </div>
 
-        {/* Recommendations */}
-        {recommendationSeedIds.length > 0 && (
+        {/* RECOMMENDATIONS */}
+        {recommendationSeedIds.length >
+          0 && (
           <div className="mb-12">
 
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-primary" />
+              <Sparkles className="h-6 w-6 text-green-500" />
 
               {autoSeedTrack
                 ? `Similar songs to "${autoSeedTrack.name}"`
@@ -226,13 +246,13 @@ function DiscoverContent() {
 
             {isLoadingRecs ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader2 className="h-8 w-8 animate-spin text-green-500" />
               </div>
             ) : recommendationsData?.tracks
                 ?.length ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 {recommendationsData.tracks.map(
-                  (track) => (
+                  (track: Song) => (
                     <TrackCard
                       key={track.id}
                       track={track}
@@ -248,22 +268,22 @@ function DiscoverContent() {
                 )}
               </div>
             ) : (
-              <p className="text-center text-muted-foreground">
+              <p className="text-zinc-400">
                 No recommendations found.
               </p>
             )}
           </div>
         )}
 
-        {/* View Toggle */}
+        {/* VIEW MODE */}
         <div className="flex justify-end gap-2 mb-6">
+
           <Button
             variant={
               viewMode === "grid"
                 ? "default"
                 : "ghost"
             }
-            size="sm"
             onClick={() =>
               setViewMode("grid")
             }
@@ -277,7 +297,6 @@ function DiscoverContent() {
                 ? "default"
                 : "ghost"
             }
-            size="sm"
             onClick={() =>
               setViewMode("list")
             }
@@ -286,10 +305,10 @@ function DiscoverContent() {
           </Button>
         </div>
 
-        {/* Search Results */}
+        {/* RESULTS */}
         {isSearching ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin text-green-500" />
           </div>
         ) : filteredSearchResults?.length ? (
           <div
@@ -300,7 +319,7 @@ function DiscoverContent() {
             )}
           >
             {filteredSearchResults.map(
-              (track) => (
+              (track: Song) => (
                 <TrackCard
                   key={track.id}
                   track={track}
@@ -327,7 +346,7 @@ function DiscoverContent() {
               )}
             >
               {trendingData.tracks.map(
-                (track) => (
+                (track: Song) => (
                   <TrackCard
                     key={track.id}
                     track={track}
@@ -348,12 +367,13 @@ function DiscoverContent() {
 
         {!isSearching &&
           searchQuery &&
-          !filteredSearchResults?.length && (
+          !filteredSearchResults
+            ?.length && (
             <div className="text-center py-20">
-              <Music className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+              <Music className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
 
-              <p className="text-muted-foreground">
-                No results found.
+              <p className="text-zinc-400">
+                No songs found.
               </p>
             </div>
           )}
