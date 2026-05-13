@@ -7,21 +7,8 @@ export async function GET(request: Request) {
   const query = searchParams.get("q")?.trim();
   const mood = searchParams.get("mood");
   const limit = parseInt(searchParams.get("limit") || "20");
-  const pythonApiUrl = process.env.FLASK_API_URL;
 
   try {
-    if (pythonApiUrl) {
-      const url = new URL(`${pythonApiUrl.replace(/\/+$/, "")}/api/recommendations`);
-      if (mood) url.searchParams.set("mood", mood);
-      if (seedTracks.length > 0) url.searchParams.set("tracks", seedTracks.join(","));
-      if (!seedTracks.length && query) url.searchParams.set("q", query);
-      url.searchParams.set("limit", limit.toString());
-
-      const response = await fetch(url.toString(), { cache: "no-store" });
-      const payload = await response.json();
-      return NextResponse.json(payload);
-    }
-
     let tracks;
 
     if (mood) {

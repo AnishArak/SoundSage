@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Search, Loader2, Music, Sparkles, Grid, List, Globe, Film } from "lucide-react";
@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import type { Song } from "@/lib/song-dataset";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-export default function DiscoverPage() {
+
+function DiscoverPageContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
@@ -294,6 +295,40 @@ export default function DiscoverPage() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+export default function DiscoverPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <DiscoverPageContent />
+    </Suspense>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4 flex items-center gap-3">
+            <Search className="h-8 w-8 text-primary" />
+            Discover Music
+          </h1>
+          <p className="text-muted-foreground max-w-2xl">
+            Loading...
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-xl bg-secondary/50 animate-pulse"
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
