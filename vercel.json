@@ -1,5 +1,5 @@
 {
-  {
+  
     "experimentalServices": {
         "frontend": {
             "routePrefix": "/",
@@ -10,51 +10,4 @@
             "routePrefix": "/_/backend"
         }
     }
-
-  "buildCommand": "next build",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_APP_URL": "@next_public_app_url"
-  },
-  "functions": {
-    "app/**/*.ts": {
-      "memory": 128,
-      "maxDuration": 10
-    }
-  },
-  "headers": [
-    {
-      "source": "/api/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        }
-      ]
-    },
-    {
-      "source": "/:path*.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, s-maxage=3600"
-        }
-      ]
-    },
-    {
-      "source": "/public/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
-  "redirects": []
 }
