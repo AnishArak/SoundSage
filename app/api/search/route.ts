@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { searchSongs } from "@/lib/song-dataset";
-import { songs } from "@/lib/song-dataset";
+
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
